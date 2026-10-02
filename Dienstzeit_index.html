@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dienstzeit">
+<title>Dienstzeit</title>
+<style>
+:root{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  color:#111;background:#f2f2f7
+}
+*{box-sizing:border-box}
+body{margin:0;background:#f2f2f7}
+button{font:inherit;-webkit-tap-highlight-color:transparent}
+header{
+  position:sticky;top:0;z-index:5;
+  background:rgba(242,242,247,.94);
+  backdrop-filter:blur(16px);
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  border-bottom:1px solid #d6d6da
+}
+h1{font-size:28px;margin:0 0 10px}
+.weekbar{display:flex;align-items:center;gap:8px}
+.weekbar button{
+  width:42px;height:38px;border:0;border-radius:11px;
+  background:#fff;font-size:22px
+}
+.weektitle{flex:1;text-align:center;font-weight:700;font-size:15px}
+main{max-width:760px;margin:auto;padding:12px 12px 100px}
+.day{
+  background:#fff;border-radius:16px;margin:10px 0;overflow:hidden;
+  box-shadow:0 1px 3px #00000012
+}
+.dayhead{
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;gap:10px;
+  padding:10px 10px 10px 14px;background:#fafafa;border-bottom:1px solid #eee
+}
+.daytitle{min-width:0}
+.dayname{font-weight:700}
+.date{color:#666;font-size:13px;margin-left:6px}
+.sum{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.plus{
+  width:36px;height:36px;border:0;border-radius:50%;
+  background:#eaf3ff;color:#007aff;font-size:28px;font-weight:400;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  padding:0 0 3px;cursor:pointer
+}
+.entry{padding:12px 14px;border-bottom:1px solid #eee}
+.entry:last-of-type{border-bottom:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pill{
+  display:inline-block;font-size:12px;font-weight:700;
+  padding:5px 9px;border-radius:999px;background:#e9e9ee;margin-bottom:7px
+}
+.times{font-size:16px;font-variant-numeric:tabular-nums}
+.hours{font-weight:700;margin-left:7px}
+.note{font-size:13px;color:#666;margin-top:5px;white-space:pre-wrap}
+.empty{padding:12px 14px;color:#888;font-size:13px}
+.dayeditbar{padding:9px 12px 11px;border-top:1px solid #eee;text-align:right;background:#fff}
+.editday{
+  border:0;background:transparent;color:#007aff;font-weight:600;
+  padding:7px 5px;cursor:pointer
+}
+.card{background:#fff;border-radius:16px;padding:15px;margin-top:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:#f6f6f8;border-radius:12px;padding:10px}
+.stat b{display:block;font-size:18px;margin-top:3px}
+.label{font-size:12px;color:#666}
+.modal{
+  position:fixed;inset:0;background:#0005;display:none;
+  align-items:flex-end;z-index:20
+}
+.modal.open{display:flex}
+.sheet{
+  background:#fff;width:100%;border-radius:20px 20px 0 0;
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+  max-height:90vh;overflow:auto
+}
+.sheet h2{margin:0 0 15px;font-size:20px}
+label{display:block;font-size:13px;color:#555;margin:10px 0 5px}
+input,select,textarea{
+  width:100%;font:inherit;border:1px solid #ccc;border-radius:10px;
+  padding:10px;background:#fff
+}
+textarea{min-height:70px;resize:vertical}
+.formbuttons{display:flex;gap:8px;margin-top:15px}
+.primary{
+  flex:1;border:0;border-radius:11px;background:#007aff;
+  color:#fff;padding:12px;font-weight:700
+}
+.cancel{border:0;border-radius:11px;background:#eee;padding:12px}
+.danger{border:0;border-radius:10px;background:#ffe9e7;color:#c00;padding:9px 12px;font-weight:600}
+.secondary{border:0;border-radius:10px;background:#eee;padding:9px 12px;font-weight:600}
+.day-editor-list{display:flex;flex-direction:column;gap:10px}
+.editor-entry{border:1px solid #e4e4e8;border-radius:13px;padding:12px}
+.editor-entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.editor-entry-main{min-width:0}
+.editor-actions{display:flex;gap:8px;margin-top:10px}
+.editor-actions button{flex:1}
+.editor-empty{padding:16px 0;color:#888;font-size:14px;text-align:center}
+.editor-footer{display:flex;gap:8px;margin-top:15px}
+.editor-footer .primary{flex:1}
+footer{text-align:center;color:#888;font-size:12px;margin-top:18px}
+@media (min-width:700px){
+  .sheet{max-width:620px;margin:0 auto;border-radius:20px 20px 0 0}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dienstzeit</h1>
+  <div class="weekbar">
+    <button onclick="changeWeek(-7)" aria-label="Vorherige Woche">‹</button>
+    <div class="weektitle" id="weekTitle"></div>
+    <button onclick="changeWeek(7)" aria-label="Nächste Woche">›</button>
+  </div>
+</header>
+
+<main>
+  <div id="days"></div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:10px">Wochensumme</div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <footer>Die Einträge werden lokal auf diesem Gerät gespeichert.</footer>
+</main>
+
+<!-- Eintrag hinzufügen / ändern -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2 id="modalTitle">Eintrag</h2>
+
+    <label>Art</label>
+    <select id="type">
+      <option>Dienststunden</option>
+      <option>Einsatzstunden</option>
+      <option>Dienstsport</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label>Beginn</label>
+        <input id="start" type="time">
+      </div>
+      <div>
+        <label>Ende</label>
+        <input id="end" type="time">
+      </div>
+    </div>
+
+    <label>Bemerkung (optional)</label>
+    <textarea id="note" placeholder="z. B. Einsatz, Büro, Sport ..."></textarea>
+
+    <div class="formbuttons">
+      <button class="cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="primary" onclick="saveEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gesamten Tag bearbeiten -->
+<div class="modal" id="dayEditorModal">
+  <div class="sheet">
+    <h2 id="dayEditorTitle">Tag bearbeiten</h2>
+    <div class="day-editor-list" id="dayEditorList"></div>
+    <div class="editor-footer">
+      <button class="secondary" onclick="addFromDayEditor()">＋ Eintrag</button>
+      <button class="primary" onclick="closeDayEditor()">Fertig</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = "dienstzeit_entries_v1";
+let data = JSON.parse(localStorage.getItem(KEY) || "{}");
+let weekStart = monday(new Date());
+let editing = null;
+let editingDay = null;
+let returnToDayEditor = false;
+
+function iso(d){
+  const x = new Date(d);
+  x.setMinutes(x.getMinutes() - x.getTimezoneOffset());
+  return x.toISOString().slice(0,10);
+}
+
+function monday(d){
+  d = new Date(d);
+  d.setHours(12,0,0,0);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function addDays(d,n){
+  const x = new Date(d);
+  x.setDate(x.getDate()+n);
+  return x;
+}
+
+function fmtDate(d){
+  return new Intl.DateTimeFormat("de-DE",{
+    day:"2-digit",month:"2-digit",year:"numeric"
+  }).format(d);
+}
+
+function fmtShort(d){
+  return new Intl.DateTimeFormat("de-DE",{
+    day:"2-digit",month:"2-digit"
+  }).format(d);
+}
+
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function minutes(a,b){
+  const [ah,am]=a.split(":").map(Number);
+  const [bh,bm]=b.split(":").map(Number);
+  let x=ah*60+am, y=bh*60+bm;
+  if(y < x) y += 1440;
+  return y-x;
+}
+
+function hm(m){
+  return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
+}
+
+function esc(s){
+  return String(s||"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function weekEntries(){
+  let all=[];
+  for(let i=0;i<8;i++){
+    const d=iso(addDays(weekStart,i));
+    (data[d]||[]).forEach((e,j)=>all.push({...e,date:d,index:j}));
+  }
+  return all;
+}
+
+function render(){
+  document.getElementById("weekTitle").textContent =
+    `${fmtShort(weekStart)} – ${fmtShort(addDays(weekStart,7))}`;
+
+  let days="";
+
+  for(let i=0;i<8;i++){
+    const d=addDays(weekStart,i);
+    const key=iso(d);
+    const arr=data[key]||[];
+    const total=arr.reduce((s,e)=>s+minutes(e.start,e.end),0);
+    const name=new Intl.DateTimeFormat("de-DE",{weekday:"short"})
+      .format(d).replace(".","");
+
+    days += `
+      <section class="day">
+        <div class="dayhead">
+          <div class="daytitle">
+            <span class="dayname">${name}</span>
+            <span class="date">${fmtDate(d)}</span>
+          </div>
+          <div class="sum">${hm(total)}</div>
+          <button class="plus" onclick="openModal('${key}')" aria-label="Eintrag hinzufügen">+</button>
+        </div>
+    `;
+
+    if(!arr.length){
+      days += `<div class="empty">Keine Einträge</div>`;
+    }
+
+    arr.forEach((e)=>{
+      days += `
+        <div class="entry">
+          <div class="pill">${esc(e.type)}</div>
+          <div class="times">
+            ${esc(e.start)} – ${esc(e.end)}
+            <span class="hours">${hm(minutes(e.start,e.end))}</span>
+          </div>
+          ${e.note ? `<div class="note">${esc(e.note)}</div>` : ""}
+        </div>
+      `;
+    });
+
+    days += `
+        <div class="dayeditbar">
+          <button class="editday" onclick="openDayEditor('${key}')">Bearbeiten</button>
+        </div>
+      </section>
+    `;
+  }
+
+  document.getElementById("days").innerHTML = days;
+
+  const sums={
+    "Dienststunden":0,
+    "Einsatzstunden":0,
+    "Dienstsport":0
+  };
+
+  weekEntries().forEach(e=>{
+    sums[e.type] += minutes(e.start,e.end);
+  });
+
+  const total = Object.values(sums).reduce((a,b)=>a+b,0);
+
+  document.getElementById("stats").innerHTML =
+    Object.entries(sums).map(([k,v])=>`
+      <div class="stat">
+        <span class="label">${k}</span>
+        <b>${hm(v)}</b>
+      </div>
+    `).join("") +
+    `
+      <div class="stat" style="grid-column:1/-1">
+        <span class="label">Gesamt</span>
+        <b>${hm(total)}</b>
+      </div>
+    `;
+}
+
+function changeWeek(n){
+  weekStart=addDays(weekStart,n);
+  render();
+}
+
+function openModal(date,index=null,fromDayEditor=false){
+  editing={date,index};
+  returnToDayEditor=fromDayEditor;
+
+  document.getElementById("modalTitle").textContent =
+    index===null ? "Neuer Eintrag" : "Eintrag bearbeiten";
+
+  const e = index===null ? null : (data[date]||[])[index];
+  document.getElementById("type").value = e?.type || "Dienststunden";
+  document.getElementById("start").value = e?.start || "08:00";
+  document.getElementById("end").value = e?.end || "16:00";
+  document.getElementById("note").value = e?.note || "";
+
+  if(fromDayEditor){
+    document.getElementById("dayEditorModal").classList.remove("open");
+  }
+  document.getElementById("modal").classList.add("open");
+}
+
+function closeModal(){
+  document.getElementById("modal").classList.remove("open");
+  const shouldReturn = returnToDayEditor && editingDay;
+  editing=null;
+  returnToDayEditor=false;
+  if(shouldReturn){
+    openDayEditor(editingDay);
+  }
+}
+
+function saveEntry(){
+  const type=document.getElementById("type").value;
+  const start=document.getElementById("start").value;
+  const end=document.getElementById("end").value;
+  const note=document.getElementById("note").value.trim();
+
+  if(!start || !end || minutes(start,end)<=0){
+    alert("Bitte Beginn und Ende korrekt eingeben.");
+    return;
+  }
+
+  const currentEditing = editing;
+  const shouldReturn = returnToDayEditor && editingDay;
+  const e={type,start,end,note};
+
+  data[currentEditing.date] ??= [];
+  if(currentEditing.index===null){
+    data[currentEditing.date].push(e);
+  }else{
+    data[currentEditing.date][currentEditing.index]=e;
+  }
+
+  save();
+  document.getElementById("modal").classList.remove("open");
+  editing=null;
+  returnToDayEditor=false;
+  render();
+
+  if(shouldReturn){
+    openDayEditor(editingDay);
+  }
+}
+
+function openDayEditor(date){
+  editingDay=date;
+  renderDayEditor();
+  document.getElementById("dayEditorModal").classList.add("open");
+}
+
+function closeDayEditor(){
+  document.getElementById("dayEditorModal").classList.remove("open");
+  editingDay=null;
+}
+
+function renderDayEditor(){
+  if(!editingDay) return;
+
+  const dateObj = new Date(`${editingDay}T12:00:00`);
+  const weekday = new Intl.DateTimeFormat("de-DE",{weekday:"long"}).format(dateObj);
+  document.getElementById("dayEditorTitle").textContent =
+    `${weekday}, ${fmtDate(dateObj)}`;
+
+  const arr=data[editingDay]||[];
+  const list=document.getElementById("dayEditorList");
+
+  if(!arr.length){
+    list.innerHTML = `<div class="editor-empty">Keine Einträge vorhanden.</div>`;
+    return;
+  }
+
+  list.innerHTML = arr.map((e,i)=>`
+    <div class="editor-entry">
+      <div class="editor-entry-head">
+        <div class="editor-entry-main">
+          <div class="pill">${esc(e.type)}</div>
+          <div class="times">
+            ${esc(e.start)} – ${esc(e.end)}
+            <span class="hours">${hm(minutes(e.start,e.end))}</span>
+          </div>
+          ${e.note ? `<div class="note">${esc(e.note)}</div>` : ""}
+        </div>
+      </div>
+      <div class="editor-actions">
+        <button class="secondary" onclick="editFromDayEditor(${i})">Ändern</button>
+        <button class="danger" onclick="deleteFromDayEditor(${i})">Löschen</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function editFromDayEditor(index){
+  openModal(editingDay,index,true);
+}
+
+function addFromDayEditor(){
+  openModal(editingDay,null,true);
+}
+
+function deleteFromDayEditor(index){
+  if(!editingDay) return;
+  if(confirm("Diesen Eintrag löschen?")){
+    data[editingDay].splice(index,1);
+    if(!data[editingDay].length) delete data[editingDay];
+    save();
+    render();
+    renderDayEditor();
+  }
+}
+
+// Tippen auf den dunklen Hintergrund schließt die jeweilige Ansicht.
+document.getElementById("modal").addEventListener("click",e=>{
+  if(e.target.id==="modal") closeModal();
+});
+document.getElementById("dayEditorModal").addEventListener("click",e=>{
+  if(e.target.id==="dayEditorModal") closeDayEditor();
+});
+
+render();
+</script>
+</body>
+</html>
