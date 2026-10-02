@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dienstzeit">
+<title>Dienstzeit</title>
+<style>
+:root{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  color:#111;background:#f2f2f7
+}
+*{box-sizing:border-box}
+body{margin:0;background:#f2f2f7}
+header{
+  position:sticky;top:0;z-index:5;
+  background:rgba(242,242,247,.94);
+  backdrop-filter:blur(16px);
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  border-bottom:1px solid #d6d6da
+}
+h1{font-size:28px;margin:0 0 10px}
+.weekbar{display:flex;align-items:center;gap:8px}
+.weekbar button{
+  width:42px;height:38px;border:0;border-radius:11px;
+  background:#fff;font-size:22px
+}
+.weektitle{flex:1;text-align:center;font-weight:700;font-size:15px}
+main{max-width:760px;margin:auto;padding:12px 12px 100px}
+.day{
+  background:#fff;border-radius:16px;margin:10px 0;overflow:hidden;
+  box-shadow:0 1px 3px #00000012
+}
+.dayhead{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;background:#fafafa;border-bottom:1px solid #eee
+}
+.dayname{font-weight:700}
+.date{color:#666;font-size:13px;margin-left:6px}
+.sum{font-weight:700;font-variant-numeric:tabular-nums}
+.entry{padding:12px 14px;border-bottom:1px solid #eee}
+.entry:last-child{border-bottom:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pill{
+  display:inline-block;font-size:12px;font-weight:700;
+  padding:5px 9px;border-radius:999px;background:#e9e9ee;margin-bottom:7px
+}
+.times{font-size:16px;font-variant-numeric:tabular-nums}
+.hours{font-weight:700;margin-left:7px}
+.note{font-size:13px;color:#666;margin-top:5px}
+.actions{display:flex;gap:6px;margin-top:8px}
+button,.add{font:inherit}
+.small{border:0;background:#eee;border-radius:9px;padding:6px 10px}
+.add{
+  width:100%;border:0;background:#f1f1f6;color:#007aff;
+  padding:11px;font-weight:600
+}
+.empty{padding:10px 14px;color:#888;font-size:13px}
+.card{background:#fff;border-radius:16px;padding:15px;margin-top:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:#f6f6f8;border-radius:12px;padding:10px}
+.stat b{display:block;font-size:18px;margin-top:3px}
+.label{font-size:12px;color:#666}
+.modal{
+  position:fixed;inset:0;background:#0005;display:none;
+  align-items:flex-end;z-index:20
+}
+.modal.open{display:flex}
+.sheet{
+  background:#fff;width:100%;border-radius:20px 20px 0 0;
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+  max-height:90vh;overflow:auto
+}
+.sheet h2{margin:0 0 15px;font-size:20px}
+label{display:block;font-size:13px;color:#555;margin:10px 0 5px}
+input,select,textarea{
+  width:100%;font:inherit;border:1px solid #ccc;border-radius:10px;
+  padding:10px;background:#fff
+}
+textarea{min-height:70px;resize:vertical}
+.formbuttons{display:flex;gap:8px;margin-top:15px}
+.primary{
+  flex:1;border:0;border-radius:11px;background:#007aff;
+  color:#fff;padding:12px;font-weight:700
+}
+.cancel{border:0;border-radius:11px;background:#eee;padding:12px}
+footer{text-align:center;color:#888;font-size:12px;margin-top:18px}
+</style>
+</head>
+<body>
+<header>
+<h1>Dienstzeit</h1>
+<div class="weekbar">
+  <button onclick="changeWeek(-7)" aria-label="Vorherige Woche">‹</button>
+  <div class="weektitle" id="weekTitle"></div>
+  <button onclick="changeWeek(7)" aria-label="Nächste Woche">›</button>
+</div>
+</header>
+
+<main>
+  <div id="days"></div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:10px">Wochensumme</div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <footer>Die Einträge werden lokal auf diesem Gerät gespeichert.</footer>
+</main>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2 id="modalTitle">Eintrag</h2>
+
+    <label>Art</label>
+    <select id="type">
+      <option>Dienststunden</option>
+      <option>Einsatzstunden</option>
+      <option>Dienstsport</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label>Beginn</label>
+        <input id="start" type="time">
+      </div>
+      <div>
+        <label>Ende</label>
+        <input id="end" type="time">
+      </div>
+    </div>
+
+    <label>Bemerkung (optional)</label>
+    <textarea id="note" placeholder="z. B. Einsatz, Büro, Sport ..."></textarea>
+
+    <div class="formbuttons">
+      <button class="cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="primary" onclick="saveEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = "dienstzeit_entries_v1";
+let data = JSON.parse(localStorage.getItem(KEY) || "{}");
+let weekStart = monday(new Date());
+let editing = null;
+
+function iso(d){
+  const x = new Date(d);
+  x.setMinutes(x.getMinutes() - x.getTimezoneOffset());
+  return x.toISOString().slice(0,10);
+}
+
+function monday(d){
+  d = new Date(d);
+  d.setHours(12,0,0,0);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function addDays(d,n){
+  const x = new Date(d);
+  x.setDate(x.getDate()+n);
+  return x;
+}
+
+function fmtDate(d){
+  return new Intl.DateTimeFormat("de-DE",{
+    day:"2-digit",month:"2-digit",year:"numeric"
+  }).format(d);
+}
+
+function fmtShort(d){
+  return new Intl.DateTimeFormat("de-DE",{
+    day:"2-digit",month:"2-digit"
+  }).format(d);
+}
+
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function minutes(a,b){
+  const [ah,am]=a.split(":").map(Number);
+  const [bh,bm]=b.split(":").map(Number);
+  let x=ah*60+am, y=bh*60+bm;
+  if(y < x) y += 1440;
+  return y-x;
+}
+
+function hm(m){
+  return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
+}
+
+function esc(s){
+  return String(s||"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function weekEntries(){
+  let all=[];
+  for(let i=0;i<8;i++){
+    const d=iso(addDays(weekStart,i));
+    (data[d]||[]).forEach((e,j)=>all.push({...e,date:d,index:j}));
+  }
+  return all;
+}
+
+function render(){
+  document.getElementById("weekTitle").textContent =
+    `${fmtShort(weekStart)} – ${fmtShort(addDays(weekStart,7))}`;
+
+  let days="";
+
+  for(let i=0;i<8;i++){
+    const d=addDays(weekStart,i);
+    const key=iso(d);
+    const arr=data[key]||[];
+    const total=arr.reduce((s,e)=>s+minutes(e.start,e.end),0);
+
+    const name=new Intl.DateTimeFormat("de-DE",{weekday:"short"})
+      .format(d).replace(".","");
+
+    days += `
+      <section class="day">
+        <div class="dayhead">
+          <div>
+            <span class="dayname">${name}</span>
+            <span class="date">${fmtDate(d)}</span>
+          </div>
+          <div class="sum">${hm(total)}</div>
+        </div>
+    `;
+
+    if(!arr.length){
+      days += `<div class="empty">Keine Einträge</div>`;
+    }
+
+    arr.forEach((e,j)=>{
+      days += `
+        <div class="entry">
+          <div class="pill">${esc(e.type)}</div>
+          <div class="times">
+            ${esc(e.start)} – ${esc(e.end)}
+            <span class="hours">${hm(minutes(e.start,e.end))}</span>
+          </div>
+          ${e.note ? `<div class="note">${esc(e.note)}</div>` : ""}
+          <div class="actions">
+            <button class="small" onclick="editEntry('${key}',${j})">Bearbeiten</button>
+            <button class="small" onclick="deleteEntry('${key}',${j})">Löschen</button>
+          </div>
+        </div>
+      `;
+    });
+
+    days += `
+      <button class="add" onclick="openModal('${key}')">＋ Eintrag hinzufügen</button>
+      </section>
+    `;
+  }
+
+  document.getElementById("days").innerHTML = days;
+
+  const sums={
+    "Dienststunden":0,
+    "Einsatzstunden":0,
+    "Dienstsport":0
+  };
+
+  weekEntries().forEach(e=>{
+    sums[e.type] += minutes(e.start,e.end);
+  });
+
+  const total = Object.values(sums).reduce((a,b)=>a+b,0);
+
+  document.getElementById("stats").innerHTML =
+    Object.entries(sums).map(([k,v])=>`
+      <div class="stat">
+        <span class="label">${k}</span>
+        <b>${hm(v)}</b>
+      </div>
+    `).join("") +
+    `
+      <div class="stat" style="grid-column:1/-1">
+        <span class="label">Gesamt</span>
+        <b>${hm(total)}</b>
+      </div>
+    `;
+}
+
+function changeWeek(n){
+  weekStart=addDays(weekStart,n);
+  render();
+}
+
+function openModal(date,index=null){
+  editing={date,index};
+  document.getElementById("modalTitle").textContent =
+    index===null ? "Neuer Eintrag" : "Eintrag bearbeiten";
+
+  const e = index===null ? null : (data[date]||[])[index];
+
+  document.getElementById("type").value = e?.type || "Dienststunden";
+  document.getElementById("start").value = e?.start || "08:00";
+  document.getElementById("end").value = e?.end || "16:00";
+  document.getElementById("note").value = e?.note || "";
+
+  document.getElementById("modal").classList.add("open");
+}
+
+function closeModal(){
+  document.getElementById("modal").classList.remove("open");
+  editing=null;
+}
+
+function saveEntry(){
+  const type=document.getElementById("type").value;
+  const start=document.getElementById("start").value;
+  const end=document.getElementById("end").value;
+  const note=document.getElementById("note").value.trim();
+
+  if(!start || !end || minutes(start,end)<=0){
+    alert("Bitte Beginn und Ende korrekt eingeben.");
+    return;
+  }
+
+  const e={type,start,end,note};
+
+  data[editing.date] ??= [];
+
+  if(editing.index===null){
+    data[editing.date].push(e);
+  }else{
+    data[editing.date][editing.index]=e;
+  }
+
+  save();
+  closeModal();
+  render();
+}
+
+function editEntry(d,i){
+  openModal(d,i);
+}
+
+function deleteEntry(d,i){
+  if(confirm("Diesen Eintrag löschen?")){
+    data[d].splice(i,1);
+    if(!data[d].length) delete data[d];
+    save();
+    render();
+  }
+}
+
+render();
+</script>
+</body>
+</html>
