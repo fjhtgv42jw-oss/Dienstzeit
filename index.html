@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dienstzeit">
+<title>Dienstzeit</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;color:#111;background:#f2f2f7}
+*{box-sizing:border-box} body{margin:0;background:#f2f2f7}
+header{position:sticky;top:0;z-index:5;background:rgba(242,242,247,.94);backdrop-filter:blur(16px);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;border-bottom:1px solid #d6d6da}
+h1{font-size:28px;margin:0 0 10px}.toprow{display:flex;align-items:center;gap:8px}.navbtn{width:42px;height:38px;border:0;border-radius:11px;background:#fff;font-size:22px}.period{flex:1;text-align:center;font-weight:700;font-size:15px}
+.segment{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#dedee3;padding:4px;border-radius:12px;margin-top:10px}
+.segment button{border:0;border-radius:9px;padding:8px;background:transparent;font-weight:600}.segment button.active{background:#fff;box-shadow:0 1px 2px #0002}
+main{max-width:760px;margin:auto;padding:12px 12px 100px}.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px #00000012}
+.calendar-head,.calendar-grid{display:grid;grid-template-columns:44px repeat(7,1fr)}
+.calendar-head div{text-align:center;padding:10px 2px;font-size:12px;color:#666;font-weight:700}
+.kwcell{min-height:86px;border-top:1px solid #eee;border-right:1px solid #eee;padding:6px 3px;background:#f5f5f8;display:flex;align-items:flex-start;justify-content:center}
+.kwbtn{border:0;background:#e7e7ed;color:#007aff;font-weight:800;font-size:11px;border-radius:9px;padding:6px 5px;min-width:34px}
+.daycell{min-height:86px;border-top:1px solid #eee;border-right:1px solid #eee;padding:6px;position:relative;background:#fff}.daycell:nth-child(8n){border-right:0}.daycell.other{background:#f8f8fa;color:#aaa}.daycell.today .num{background:#007aff;color:white}
+.num{width:25px;height:25px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-bottom:4px}.badge{display:block;font-size:10px;line-height:1.2;padding:3px 4px;border-radius:6px;background:#f0f0f4;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.totalmini{font-size:11px;font-weight:700;margin-top:4px}
+.legend{display:flex;gap:8px;flex-wrap:wrap;padding:12px;background:#fff;border-top:1px solid #eee}.legend span{font-size:11px;background:#f2f2f6;border-radius:999px;padding:5px 8px}
+.day{background:#fff;border-radius:16px;margin:10px 0;overflow:hidden;box-shadow:0 1px 3px #00000012}.dayhead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fafafa;border-bottom:1px solid #eee}
+.dayname{font-weight:700}.date{color:#666;font-size:13px;margin-left:6px}.sum{font-weight:700;font-variant-numeric:tabular-nums}.entry{padding:12px 14px;border-bottom:1px solid #eee}.entry:last-child{border-bottom:0}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:5px 9px;border-radius:999px;background:#e9e9ee;margin-bottom:7px}.times{font-size:16px;font-variant-numeric:tabular-nums}.hours{font-weight:700;margin-left:7px}.note{font-size:13px;color:#666;margin-top:5px}
+.actions{display:flex;gap:6px;margin-top:8px}button,.add{font:inherit}.small{border:0;background:#eee;border-radius:9px;padding:6px 10px}.add{width:100%;border:0;background:#f1f1f6;color:#007aff;padding:11px;font-weight:600}.empty{padding:10px 14px;color:#888;font-size:13px}
+.weeksummary{background:#fff;border-radius:16px;padding:14px;margin:10px 0 14px;box-shadow:0 1px 3px #00000012}.weeksummary h2{font-size:19px;margin:0 0 4px}.weeksummary .sub{font-size:13px;color:#666}
+.statscard{background:#fff;border-radius:16px;padding:15px;margin-top:14px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:#f6f6f8;border-radius:12px;padding:10px}.stat b{display:block;font-size:18px;margin-top:3px}.label{font-size:12px;color:#666}
+.modal{position:fixed;inset:0;background:#0005;display:none;align-items:flex-end;z-index:20}.modal.open{display:flex}.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}.sheet h2{margin:0 0 15px;font-size:20px}
+label{display:block;font-size:13px;color:#555;margin:10px 0 5px}input,select,textarea{width:100%;font:inherit;border:1px solid #ccc;border-radius:10px;padding:10px;background:#fff}textarea{min-height:70px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.formbuttons{display:flex;gap:8px;margin-top:15px}.primary{flex:1;border:0;border-radius:11px;background:#007aff;color:#fff;padding:12px;font-weight:700}.cancel{border:0;border-radius:11px;background:#eee;padding:12px}footer{text-align:center;color:#888;font-size:12px;margin-top:18px}
+.backbtn{width:100%;border:0;background:#fff;color:#007aff;padding:12px;border-radius:12px;font-weight:700;margin-bottom:8px}
+@media (max-width:430px){
+  .calendar-head,.calendar-grid{grid-template-columns:36px repeat(7,1fr)}
+  .daycell,.kwcell{min-height:74px;padding:4px}
+  .badge{font-size:9px}.totalmini{font-size:10px}.kwbtn{font-size:10px;min-width:30px;padding:5px 3px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dienstzeit</h1>
+  <div class="toprow">
+    <button class="navbtn" id="prevBtn" onclick="navigate(-1)">‹</button>
+    <div class="period" id="periodTitle"></div>
+    <button class="navbtn" id="nextBtn" onclick="navigate(1)">›</button>
+  </div>
+  <div class="segment">
+    <button id="btnCalendar" class="active" onclick="setMode('calendar')">Kalender</button>
+    <button id="btnWeek" onclick="setMode('week')">Dienstwoche</button>
+  </div>
+</header>
+
+<main>
+  <div id="view"></div>
+  <div class="statscard">
+    <div style="font-weight:700;margin-bottom:10px" id="summaryTitle">Monatssumme</div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <footer>Die Einträge werden lokal auf diesem Gerät gespeichert.</footer>
+</main>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2 id="modalTitle">Eintrag</h2>
+    <label>Art</label>
+    <select id="type">
+      <option>Dienststunden</option>
+      <option>Einsatzstunden</option>
+      <option>Dienstsport</option>
+    </select>
+    <div class="row">
+      <div><label>Beginn</label><input id="start" type="time"></div>
+      <div><label>Ende</label><input id="end" type="time"></div>
+    </div>
+    <label>Bemerkung (optional)</label>
+    <textarea id="note" placeholder="z. B. Einsatz, Büro, Sport ..."></textarea>
+    <div class="formbuttons">
+      <button class="cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="primary" onclick="saveEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY="dienstzeit_entries_v1";
+let data=JSON.parse(localStorage.getItem(KEY)||"{}");
+let mode="calendar";
+let subview="main";
+let currentMonth=new Date();
+currentMonth=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1,12);
+let weekStart=monday(new Date());
+let selectedKWStart=null;
+let editing=null;
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function iso(d){
+  const x=new Date(d);
+  x.setMinutes(x.getMinutes()-x.getTimezoneOffset());
+  return x.toISOString().slice(0,10)
+}
+function monday(d){
+  d=new Date(d); d.setHours(12,0,0,0);
+  const day=d.getDay(); const diff=(day===0?-6:1-day);
+  d.setDate(d.getDate()+diff); return d
+}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+function fmtDate(d){return new Intl.DateTimeFormat("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d)}
+function fmtShort(d){return new Intl.DateTimeFormat("de-DE",{day:"2-digit",month:"2-digit"}).format(d)}
+function fmtMonth(d){return new Intl.DateTimeFormat("de-DE",{month:"long",year:"numeric"}).format(d)}
+function minutes(a,b){
+  const [ah,am]=a.split(":").map(Number),[bh,bm]=b.split(":").map(Number);
+  let x=ah*60+am,y=bh*60+bm;if(y<x)y+=1440;return y-x
+}
+function hm(m){return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`}
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function dayTotal(key){return (data[key]||[]).reduce((s,e)=>s+minutes(e.start,e.end),0)}
+function typesForDay(key){return [...new Set((data[key]||[]).map(e=>e.type))]}
+function typeShort(t){return t==="Dienststunden"?"D":t==="Einsatzstunden"?"E":"S"}
+
+function isoWeekNumber(date){
+  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const day=d.getUTCDay()||7;
+  d.setUTCDate(d.getUTCDate()+4-day);
+  const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d-yearStart)/86400000)+1)/7);
+}
+function isoWeekYear(date){
+  const d=new Date(date);
+  d.setHours(12,0,0,0);
+  d.setDate(d.getDate()+4-(d.getDay()||7));
+  return d.getFullYear();
+}
+
+function setMode(m){
+  mode=m; subview="main"; selectedKWStart=null;
+  document.getElementById("btnCalendar").classList.toggle("active",m==="calendar");
+  document.getElementById("btnWeek").classList.toggle("active",m==="week");
+  render();
+}
+function navigate(dir){
+  if(subview==="kw"){
+    selectedKWStart=addDays(selectedKWStart,dir*7);
+    renderKWOverview(selectedKWStart);
+    renderStats();
+    return;
+  }
+  if(mode==="calendar") currentMonth=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+dir,1,12);
+  else weekStart=addDays(weekStart,dir*7);
+  render();
+}
+function render(){
+  if(mode==="calendar") renderCalendar(); else renderWeek();
+  renderStats();
+}
+
+function renderCalendar(){
+  subview="main";
+  document.getElementById("periodTitle").textContent=fmtMonth(currentMonth);
+  document.getElementById("summaryTitle").textContent="Monatssumme";
+  const year=currentMonth.getFullYear(),month=currentMonth.getMonth();
+  const first=new Date(year,month,1,12), last=new Date(year,month+1,0,12);
+  let start=monday(first), end=addDays(monday(last),6);
+  if(end<last) end=addDays(end,7);
+  const todayKey=iso(new Date());
+  const weekdays=["KW","Mo","Di","Mi","Do","Fr","Sa","So"];
+  let html=`<div class="card"><div class="calendar-head">${weekdays.map(x=>`<div>${x}</div>`).join("")}</div><div class="calendar-grid">`;
+
+  for(let wk=new Date(start); wk<=end; wk=addDays(wk,7)){
+    const kw=isoWeekNumber(wk);
+    html+=`<div class="kwcell"><button class="kwbtn" onclick="event.stopPropagation();openKW('${iso(wk)}')">KW ${kw}</button></div>`;
+    for(let i=0;i<7;i++){
+      const d=addDays(wk,i),key=iso(d),other=d.getMonth()!==month,total=dayTotal(key),types=typesForDay(key);
+      html+=`<div class="daycell ${other?"other":""} ${key===todayKey?"today":""}" onclick="openDay('${key}')">
+        <div class="num">${d.getDate()}</div>
+        ${total?`<div class="totalmini">${hm(total)} h</div>`:""}
+        ${types.slice(0,3).map(t=>`<span class="badge">${typeShort(t)} · ${esc(t)}</span>`).join("")}
+      </div>`;
+    }
+  }
+  html+=`</div><div class="legend"><span>KW antippen = Wochenübersicht</span><span>D = Dienststunden</span><span>E = Einsatzstunden</span><span>S = Dienstsport</span></div></div>`;
+  document.getElementById("view").innerHTML=html;
+}
+
+function openKW(startKey){
+  selectedKWStart=new Date(startKey+"T12:00:00");
+  subview="kw";
+  renderKWOverview(selectedKWStart);
+  renderStats();
+}
+
+function renderKWOverview(start){
+  subview="kw";
+  selectedKWStart=monday(start);
+  const kw=isoWeekNumber(selectedKWStart), year=isoWeekYear(selectedKWStart);
+  const end=addDays(selectedKWStart,6);
+  document.getElementById("periodTitle").textContent=`KW ${kw} / ${year}`;
+  document.getElementById("summaryTitle").textContent=`Summe KW ${kw}`;
+  let html=`<button class="backbtn" onclick="renderCalendar();renderStats()">← Zurück zum Kalender</button>
+    <div class="weeksummary">
+      <h2>Kalenderwoche ${kw}</h2>
+      <div class="sub">${fmtDate(selectedKWStart)} – ${fmtDate(end)} · Nur Übersicht</div>
+    </div>`;
+
+  for(let i=0;i<7;i++){
+    const d=addDays(selectedKWStart,i),key=iso(d),arr=data[key]||[];
+    const name=new Intl.DateTimeFormat("de-DE",{weekday:"long"}).format(d);
+    html+=`<section class="day"><div class="dayhead">
+      <div><span class="dayname">${name}</span><span class="date">${fmtDate(d)}</span></div>
+      <div class="sum">${hm(dayTotal(key))}</div></div>`;
+    if(!arr.length) html+=`<div class="empty">Keine Einträge</div>`;
+    arr.forEach(e=>html+=entryReadonlyHtml(e));
+    html+=`</section>`;
+  }
+  document.getElementById("view").innerHTML=html;
+}
+
+function openDay(key){
+  subview="day";
+  const arr=data[key]||[];
+  const d=new Date(key+"T12:00:00");
+  document.getElementById("periodTitle").textContent=fmtDate(d);
+  document.getElementById("summaryTitle").textContent="Tagessumme";
+  let html=`<button class="backbtn" onclick="renderCalendar();renderStats()">← Zurück zum Kalender</button>
+    <section class="day">
+    <div class="dayhead">
+      <div><span class="dayname">${new Intl.DateTimeFormat("de-DE",{weekday:"long"}).format(d)}</span>
+      <span class="date">${fmtDate(d)}</span></div>
+      <div class="sum">${hm(dayTotal(key))}</div>
+    </div>`;
+  if(!arr.length) html+=`<div class="empty">Keine Einträge</div>`;
+  arr.forEach((e,j)=>html+=entryHtml(e,key,j));
+  html+=`<button class="add" onclick="openModal('${key}')">＋ Eintrag hinzufügen</button></section>`;
+  document.getElementById("view").innerHTML=html;
+  renderStats();
+}
+
+function renderWeek(){
+  subview="main";
+  document.getElementById("periodTitle").textContent=`${fmtShort(weekStart)} – ${fmtShort(addDays(weekStart,7))}`;
+  document.getElementById("summaryTitle").textContent="Wochensumme";
+  let html="";
+  for(let i=0;i<8;i++){
+    const d=addDays(weekStart,i),key=iso(d),arr=data[key]||[];
+    const name=new Intl.DateTimeFormat("de-DE",{weekday:"short"}).format(d).replace(".","");
+    html+=`<section class="day"><div class="dayhead">
+      <div><span class="dayname">${name}</span><span class="date">${fmtDate(d)}</span></div>
+      <div class="sum">${hm(dayTotal(key))}</div></div>`;
+    if(!arr.length) html+=`<div class="empty">Keine Einträge</div>`;
+    arr.forEach((e,j)=>html+=entryHtml(e,key,j));
+    html+=`<button class="add" onclick="openModal('${key}')">＋ Eintrag hinzufügen</button></section>`;
+  }
+  document.getElementById("view").innerHTML=html;
+}
+function entryHtml(e,key,j){
+  return `<div class="entry">
+    <div class="pill">${esc(e.type)}</div>
+    <div class="times">${esc(e.start)} – ${esc(e.end)} <span class="hours">${hm(minutes(e.start,e.end))}</span></div>
+    ${e.note?`<div class="note">${esc(e.note)}</div>`:""}
+    <div class="actions">
+      <button class="small" onclick="event.stopPropagation();editEntry('${key}',${j})">Bearbeiten</button>
+      <button class="small" onclick="event.stopPropagation();deleteEntry('${key}',${j})">Löschen</button>
+    </div>
+  </div>`;
+}
+
+function entryReadonlyHtml(e){
+  return `<div class="entry">
+    <div class="pill">${esc(e.type)}</div>
+    <div class="times">${esc(e.start)} – ${esc(e.end)} <span class="hours">${hm(minutes(e.start,e.end))}</span></div>
+    ${e.note?`<div class="note">${esc(e.note)}</div>`:""}
+  </div>`;
+}
+
+function entriesForCurrentView(){
+  let all=[];
+  if(subview==="kw" && selectedKWStart){
+    for(let i=0;i<7;i++){
+      const key=iso(addDays(selectedKWStart,i));
+      (data[key]||[]).forEach(e=>all.push(e));
+    }
+    return all;
+  }
+  if(subview==="day"){
+    const title=document.getElementById("periodTitle").textContent;
+    for(const [key,arr] of Object.entries(data)){
+      if(fmtDate(new Date(key+"T12:00:00"))===title) arr.forEach(e=>all.push(e));
+    }
+    return all;
+  }
+  if(mode==="week"){
+    for(let i=0;i<8;i++){
+      const key=iso(addDays(weekStart,i));
+      (data[key]||[]).forEach(e=>all.push(e));
+    }
+  }else{
+    const y=currentMonth.getFullYear(),m=currentMonth.getMonth();
+    for(const [key,arr] of Object.entries(data)){
+      const d=new Date(key+"T12:00:00");
+      if(d.getFullYear()===y && d.getMonth()===m) arr.forEach(e=>all.push(e));
+    }
+  }
+  return all;
+}
+
+function renderStats(){
+  const sums={"Dienststunden":0,"Einsatzstunden":0,"Dienstsport":0};
+  entriesForCurrentView().forEach(e=>sums[e.type]+=minutes(e.start,e.end));
+  const total=Object.values(sums).reduce((a,b)=>a+b,0);
+  document.getElementById("stats").innerHTML=
+    Object.entries(sums).map(([k,v])=>`<div class="stat"><span class="label">${k}</span><b>${hm(v)}</b></div>`).join("")+
+    `<div class="stat" style="grid-column:1/-1"><span class="label">Gesamt</span><b>${hm(total)}</b></div>`;
+}
+
+function openModal(date,index=null){
+  editing={date,index};
+  document.getElementById("modalTitle").textContent=index===null?"Neuer Eintrag":"Eintrag bearbeiten";
+  const e=index===null?null:(data[date]||[])[index];
+  document.getElementById("type").value=e?.type||"Dienststunden";
+  document.getElementById("start").value=e?.start||"08:00";
+  document.getElementById("end").value=e?.end||"16:00";
+  document.getElementById("note").value=e?.note||"";
+  document.getElementById("modal").classList.add("open");
+}
+function closeModal(){document.getElementById("modal").classList.remove("open");editing=null}
+function saveEntry(){
+  const type=document.getElementById("type").value,start=document.getElementById("start").value,end=document.getElementById("end").value,note=document.getElementById("note").value.trim();
+  if(!start||!end||minutes(start,end)<=0){alert("Bitte Beginn und Ende korrekt eingeben.");return}
+  const e={type,start,end,note}; data[editing.date]??=[];
+  if(editing.index===null)data[editing.date].push(e);else data[editing.date][editing.index]=e;
+  save();closeModal();
+  if(subview==="kw") renderKWOverview(selectedKWStart);
+  else if(subview==="day") openDay(editing?.date || "");
+  else render();
+  renderStats();
+}
+function editEntry(d,i){openModal(d,i)}
+function deleteEntry(d,i){
+  if(confirm("Diesen Eintrag löschen?")){
+    data[d].splice(i,1);if(!data[d].length)delete data[d];
+    save();
+    if(subview==="kw") renderKWOverview(selectedKWStart);
+    else if(subview==="day") openDay(d);
+    else render();
+    renderStats();
+  }
+}
+render();
+</script>
+</body>
+</html>
